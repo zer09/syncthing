@@ -1591,6 +1591,212 @@ func (m *Model) ResetFolder(folder string) error {
 	return fmt.Errorf("Unknown folder %q", folder)
 }
 
+// Set selective sync patterns
+func (m *Model) SetSelections(folder string, selections []string) error {
+	m.fmut.RLock()
+	cfg, ok := m.folderCfgs[folder]
+	m.fmut.RUnlock()
+	if !ok {
+		return fmt.Errorf("Folder %s does not exist", folder)
+	}
+
+	cfg.SelectivePatterns = selections
+	m.cfg.SetFolder(cfg)
+	return m.cfg.Save()
+}
+
+type jsTreeNode struct {
+	Text     string      `json:"text"`
+	Id       string      `json:"id"`
+	Children interface{} `json:"children"`
+	Icon     string      `json:"icon"`
+	Edge     bool        `json:"DEBUG_edge"`
+}
+
+// Get selective sync selection patterns. If tree flag is enabled, it will also
+// produce a tree to be consumed by jsTree library so that the amount of work
+// to be done in the browser would be minimal. The tree returns returns a tree
+// down to the selected nodes, as well as all nodes that are not tranversed but
+// are visible along the way, indicating wether or not they have any children,
+// so that we'd know if we need to load them later.
+func (m *Model) GetSelections(folder string, tree bool) (map[string]interface{}, error) {
+	m.fmut.RLock()
+	cfg, okc := m.folderCfgs[folder]
+	files, okf := m.folderFiles[folder]
+	m.fmut.RUnlock()
+	if !okc || !okf {
+		return nil, fmt.Errorf("Folder %s does not exist", folder)
+	}
+
+	output := make(map[string]interface{})
+
+	if tree {
+		// Builds a jsTree plugin parsable tree which indicates nodes and
+		// either their children ([]*jsTreeNode) or presence of children (bool)
+		// which then allows further AJAX expansion of the tree at that point.
+		// We care about 3 properties here:
+		// 1. If our path is a prefix to any of the patterns (selfMatch)
+		// 2. If our parent is a prefix to any of the patterns (parentMatch)
+		// 3. If our grandparent is a prefix to any of the patterns (grandparentMatch)
+		// Then depending on the properties we do the following:
+		// 1. If grandparentMatch is false, skip
+		// 2. If grandparentMatch is true but parentMatch is false it means
+		//    our parent has the potential to be expanded in the, hence we
+		//    inform the parent that it has children.
+		// 3. If grandparentMatch and parentMatch is true, but selfMatch is false
+		//    we know that we are one step away from one of the prefixes.
+		//    We add ourself to our parent as an edge node with no known
+		//    children (false) in hopes that we will later find one of our
+		//    children (hitting scenario 2) setting the children flag to true.
+		// 4. If we are a prefix to one of the patterns, we add ourselves as a
+		//    non-edge node with a potential list of children. Our children
+		//    (given they are not a proper prefix) will then register themselves
+		//    with us (hitting scenario 3) and become edge nodes.
+
+		// Both structs refence pointers, as the underlying structs might change.
+		roots := make([]*jsTreeNode, 0)
+		// A map which allows us quickly to access our parents
+		nodes := make(map[string]*jsTreeNode)
+
+		files.WithGlobalTruncated(func(fi db.FileIntf) bool {
+			f := fi.(db.FileInfoTruncated)
+
+			// Don't care about files.
+			if f.IsInvalid() || f.IsDeleted() || f.IsSymlink() || !f.IsDirectory() {
+				return true
+			}
+
+			parent := filepath.Dir(f.Name)
+			grandparent := filepath.Dir(parent)
+
+			selfMatch := false
+			parentMatch := false
+			grandparentMatch := false
+
+			// Store the parent here, in case we look it up in the else
+			// branch while 'optimizing'.
+			var par *jsTreeNode = nil
+
+			if parent == "." {
+				// There is no parent, hence we are at the root.
+				grandparentMatch = true
+				parentMatch = true
+				selfMatch = true
+			} else if grandparent == "." {
+				// There is no grandparent, hence our parent is at the root.
+				grandparentMatch = true
+				parentMatch = true
+				for _, pat := range cfg.SelectivePatterns {
+					if strings.HasPrefix(pat, f.Name) {
+						selfMatch = true
+						break
+					}
+				}
+			} else {
+				// There is a parent and a grandparent, check if we or our
+				// parent or grandparent are somewhere along the way.
+
+				// Optimization (is it?) to skip string matching in the loop.
+				var ok bool
+				par, ok = nodes[parent]
+				if ok && !par.Edge {
+					parentMatch = true
+					grandparentMatch = true
+				} else if node, ok := nodes[grandparent]; ok && !node.Edge {
+					grandparentMatch = true
+				}
+
+				for _, pat := range cfg.SelectivePatterns {
+					if strings.HasPrefix(pat, f.Name) {
+						selfMatch = true
+						parentMatch = true
+						grandparentMatch = true
+						break
+					}
+					if !parentMatch && strings.HasPrefix(pat, parent) {
+						parentMatch = true
+						grandparentMatch = true
+					}
+					if !grandparentMatch && strings.HasPrefix(pat, grandparent) {
+						grandparentMatch = true
+					}
+				}
+			}
+
+			if !grandparentMatch {
+				// Scenario 1
+				// Our grandparent is not on one of the patterns, hence
+				// our parent is not one of the edge nodes who would needs to
+				// know about our existance.
+				return true
+			}
+
+			self := jsTreeNode{
+				Text: filepath.Base(f.Name),
+				Id:   f.Name,
+				Icon: "glyphicon glyphicon-folder-open",
+			}
+			if selfMatch {
+				self.Edge = false
+				// Slice of pointers, as the underlying children might change.
+				self.Children = make([]*jsTreeNode, 0)
+			} else if parentMatch {
+				self.Edge = true
+				self.Children = false
+			}
+
+			if parent == "." {
+				// We are part of the root, as we have no parent.
+				roots = append(roots, &self)
+				// We are likely to be someone's parent, as we are at the root.
+				// Cache ourselves.
+				nodes[f.Name] = &self
+				return true
+			}
+
+			// Let our parent know about our presence.
+			if par == nil {
+				par = nodes[parent]
+			}
+			if par.Edge {
+				// Scenario 2
+				// If the parent is on the edge (his grandparent is still
+				// on one of the patterns, but the parent is no longer
+				// there) we only need to inform our parent about the fact
+				// that it has children.
+				// We are unlikely to have any children as we are an edge
+				// node.
+				par.Children = true
+				return true
+			}
+
+			// Scenario 3 and 4, though self.Edge decides if it's 3 or 4
+			// We need to register ourself as a child of our parent.
+
+			children := par.Children.([]*jsTreeNode)
+			// If we are the first child, add the "Files in XYZ" node
+			// before us.
+			if len(children) == 0 {
+				children = append(children, &jsTreeNode{
+					Text:     "Files in \"" + filepath.Base(parent) + "\"",
+					Id:       filepath.Join(par.Id, "[^/]+"),
+					Children: nil,
+					Icon:     "glyphicon glyphicon-file",
+				})
+			}
+			par.Children = append(children, &self)
+
+			// We are likely to be someone's parent, just because our
+			// parent is not an edge node.
+			nodes[f.Name] = &self
+			return true
+		})
+		output["tree"] = roots
+	}
+	output["patterns"] = cfg.SelectivePatterns
+	return output, nil
+}
+
 func (m *Model) String() string {
 	return fmt.Sprintf("model@%p", m)
 }

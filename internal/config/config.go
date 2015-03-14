@@ -70,18 +70,20 @@ func (orig Configuration) Copy() Configuration {
 }
 
 type FolderConfiguration struct {
-	ID              string                      `xml:"id,attr" json:"id"`
-	RawPath         string                      `xml:"path,attr" json:"path"`
-	Devices         []FolderDeviceConfiguration `xml:"device" json:"devices"`
-	ReadOnly        bool                        `xml:"ro,attr" json:"readOnly"`
-	RescanIntervalS int                         `xml:"rescanIntervalS,attr" json:"rescanIntervalS"`
-	IgnorePerms     bool                        `xml:"ignorePerms,attr" json:"ignorePerms"`
-	AutoNormalize   bool                        `xml:"autoNormalize,attr" json:"autoNormalize"`
-	Versioning      VersioningConfiguration     `xml:"versioning" json:"versioning"`
-	LenientMtimes   bool                        `xml:"lenientMtimes" json:"lenientMTimes"`
-	Copiers         int                         `xml:"copiers" json:"copiers"` // This defines how many files are handled concurrently.
-	Pullers         int                         `xml:"pullers" json:"pullers"` // Defines how many blocks are fetched at the same time, possibly between separate copier routines.
-	Hashers         int                         `xml:"hashers" json:"hashers"` // Less than one sets the value to the number of cores. These are CPU bound due to hashing.
+	ID                string                      `xml:"id,attr" json:"id"`
+	RawPath           string                      `xml:"path,attr" json:"path"`
+	Devices           []FolderDeviceConfiguration `xml:"device" json:"devices"`
+	ReadOnly          bool                        `xml:"ro,attr" json:"readOnly"`
+	RescanIntervalS   int                         `xml:"rescanIntervalS,attr" json:"rescanIntervalS"`
+	IgnorePerms       bool                        `xml:"ignorePerms,attr" json:"ignorePerms"`
+	AutoNormalize     bool                        `xml:"autoNormalize,attr" json:"autoNormalize"`
+	Versioning        VersioningConfiguration     `xml:"versioning" json:"versioning"`
+	LenientMtimes     bool                        `xml:"lenientMtimes" json:"lenientMTimes"`
+	Copiers           int                         `xml:"copiers" json:"copiers"` // This defines how many files are handled concurrently.
+	Pullers           int                         `xml:"pullers" json:"pullers"` // Defines how many blocks are fetched at the same time, possibly between separate copier routines.
+	Hashers           int                         `xml:"hashers" json:"hashers"` // Less than one sets the value to the number of cores. These are CPU bound due to hashing.
+	SelectiveEnabled  bool                        `xml:"selectiveEnabled" json:"selectiveEnabled"`
+	SelectivePatterns []string                    `xml:"selectivePatterns" json:"selectivePatterns"`
 
 	Invalid string `xml:"-" json:"invalid"` // Set at runtime when there is an error, not saved
 
@@ -408,6 +410,9 @@ func (cfg *Configuration) prepare(myID protocol.DeviceID) {
 		}
 		if cfg.Folders[i].Pullers == 0 {
 			cfg.Folders[i].Pullers = 16
+		}
+		if cfg.Folders[i].SelectivePatterns == nil {
+			cfg.Folders[i].SelectivePatterns = make([]string, 0)
 		}
 		sort.Sort(FolderDeviceConfigurationList(cfg.Folders[i].Devices))
 	}
