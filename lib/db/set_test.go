@@ -34,7 +34,7 @@ func genBlocks(n int) []protocol.BlockInfo {
 		for j := range h {
 			h[j] = byte(i + j)
 		}
-		b[i].Size = int32(i)
+		b[i].Size = int32(i + 1)
 		b[i].Hash = h
 	}
 	return b
@@ -113,13 +113,7 @@ func TestGlobalSet(t *testing.T) {
 		protocol.FileInfo{Name: "d", Version: protocol.Vector{{ID: myID, Value: 1000}}, Blocks: genBlocks(4)},
 		protocol.FileInfo{Name: "z", Version: protocol.Vector{{ID: myID, Value: 1001}}, Flags: protocol.FlagDeleted},
 	}
-	localTot := fileList{
-		local0[0],
-		local0[1],
-		local0[2],
-		local0[3],
-		protocol.FileInfo{Name: "z", Version: protocol.Vector{{ID: myID, Value: 1001}}, Flags: protocol.FlagDeleted},
-	}
+	localTot := local1
 
 	remote0 := fileList{
 		protocol.FileInfo{Name: "a", Version: protocol.Vector{{ID: myID, Value: 1000}}, Blocks: genBlocks(1)},
@@ -585,11 +579,13 @@ func TestGlobalNeedWithInvalid(t *testing.T) {
 	}
 
 	need := fileList(needList(s, protocol.LocalDeviceID))
+	sort.Sort(need)
 	if fmt.Sprint(need) != fmt.Sprint(total) {
 		t.Errorf("Need incorrect;\n A: %v !=\n E: %v", need, total)
 	}
 
 	global := fileList(globalList(s))
+	sort.Sort(global)
 	if fmt.Sprint(global) != fmt.Sprint(total) {
 		t.Errorf("Global incorrect;\n A: %v !=\n E: %v", global, total)
 	}

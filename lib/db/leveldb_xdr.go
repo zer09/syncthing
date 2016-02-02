@@ -19,22 +19,19 @@ fileVersion Structure:
 \                       Vector Structure                        \
 /                                                               /
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-/                                                               /
-\                 device (length + padded data)                 \
-/                                                               /
+|                           device ID                           |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 
 struct fileVersion {
 	Vector version;
-	opaque device<>;
+	unsigned int deviceID;
 }
 
 */
 
 func (o fileVersion) XDRSize() int {
-	return o.version.XDRSize() +
-		4 + len(o.device) + xdr.Padding(len(o.device))
+	return o.version.XDRSize() + 4
 }
 
 func (o fileVersion) MarshalXDR() ([]byte, error) {
@@ -55,7 +52,7 @@ func (o fileVersion) MarshalXDRInto(m *xdr.Marshaller) error {
 	if err := o.version.MarshalXDRInto(m); err != nil {
 		return err
 	}
-	m.MarshalBytes(o.device)
+	m.MarshalUint32(o.deviceID)
 	return m.Error
 }
 
@@ -65,7 +62,7 @@ func (o *fileVersion) UnmarshalXDR(bs []byte) error {
 }
 func (o *fileVersion) UnmarshalXDRFrom(u *xdr.Unmarshaller) error {
 	(&o.version).UnmarshalXDRFrom(u)
-	o.device = u.UnmarshalBytes()
+	o.deviceID = u.UnmarshalUint32()
 	return u.Error
 }
 
@@ -133,6 +130,139 @@ func (o *versionList) UnmarshalXDRFrom(u *xdr.Unmarshaller) error {
 			o.versions = o.versions[:_versionsSize]
 		} else {
 			o.versions = make([]fileVersion, _versionsSize)
+		}
+		for i := range o.versions {
+			(&o.versions[i]).UnmarshalXDRFrom(u)
+		}
+	}
+	return u.Error
+}
+
+/*
+
+oldFileVersion Structure:
+
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+/                                                               /
+\                       Vector Structure                        \
+/                                                               /
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+/                                                               /
+\                 device (length + padded data)                 \
+/                                                               /
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+
+struct oldFileVersion {
+	Vector version;
+	opaque device<>;
+}
+
+*/
+
+func (o oldFileVersion) XDRSize() int {
+	return o.version.XDRSize() +
+		4 + len(o.device) + xdr.Padding(len(o.device))
+}
+
+func (o oldFileVersion) MarshalXDR() ([]byte, error) {
+	buf := make([]byte, o.XDRSize())
+	m := &xdr.Marshaller{Data: buf}
+	return buf, o.MarshalXDRInto(m)
+}
+
+func (o oldFileVersion) MustMarshalXDR() []byte {
+	bs, err := o.MarshalXDR()
+	if err != nil {
+		panic(err)
+	}
+	return bs
+}
+
+func (o oldFileVersion) MarshalXDRInto(m *xdr.Marshaller) error {
+	if err := o.version.MarshalXDRInto(m); err != nil {
+		return err
+	}
+	m.MarshalBytes(o.device)
+	return m.Error
+}
+
+func (o *oldFileVersion) UnmarshalXDR(bs []byte) error {
+	u := &xdr.Unmarshaller{Data: bs}
+	return o.UnmarshalXDRFrom(u)
+}
+func (o *oldFileVersion) UnmarshalXDRFrom(u *xdr.Unmarshaller) error {
+	(&o.version).UnmarshalXDRFrom(u)
+	o.device = u.UnmarshalBytes()
+	return u.Error
+}
+
+/*
+
+oldVersionList Structure:
+
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                      Number of versions                       |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+/                                                               /
+\            Zero or more oldFileVersion Structures             \
+/                                                               /
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+
+struct oldVersionList {
+	oldFileVersion versions<>;
+}
+
+*/
+
+func (o oldVersionList) XDRSize() int {
+	return 4 + xdr.SizeOfSlice(o.versions)
+}
+
+func (o oldVersionList) MarshalXDR() ([]byte, error) {
+	buf := make([]byte, o.XDRSize())
+	m := &xdr.Marshaller{Data: buf}
+	return buf, o.MarshalXDRInto(m)
+}
+
+func (o oldVersionList) MustMarshalXDR() []byte {
+	bs, err := o.MarshalXDR()
+	if err != nil {
+		panic(err)
+	}
+	return bs
+}
+
+func (o oldVersionList) MarshalXDRInto(m *xdr.Marshaller) error {
+	m.MarshalUint32(uint32(len(o.versions)))
+	for i := range o.versions {
+		if err := o.versions[i].MarshalXDRInto(m); err != nil {
+			return err
+		}
+	}
+	return m.Error
+}
+
+func (o *oldVersionList) UnmarshalXDR(bs []byte) error {
+	u := &xdr.Unmarshaller{Data: bs}
+	return o.UnmarshalXDRFrom(u)
+}
+func (o *oldVersionList) UnmarshalXDRFrom(u *xdr.Unmarshaller) error {
+	_versionsSize := int(u.UnmarshalUint32())
+	if _versionsSize < 0 {
+		return xdr.ElementSizeExceeded("versions", _versionsSize, 0)
+	} else if _versionsSize == 0 {
+		o.versions = nil
+	} else {
+		if _versionsSize <= len(o.versions) {
+			o.versions = o.versions[:_versionsSize]
+		} else {
+			o.versions = make([]oldFileVersion, _versionsSize)
 		}
 		for i := range o.versions {
 			(&o.versions[i]).UnmarshalXDRFrom(u)

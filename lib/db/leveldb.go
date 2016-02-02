@@ -35,38 +35,47 @@ func clock(v int64) int64 {
 	return clockTick
 }
 
+// We use static numbering here instead of iota as we can't allow these
+// numbers to change if we, for example, remove a key type.
 const (
-	KeyTypeDevice = iota
-	KeyTypeGlobal
-	KeyTypeBlock
-	KeyTypeDeviceStatistic
-	KeyTypeFolderStatistic
-	KeyTypeVirtualMtime
-	KeyTypeFolderIdx
-	KeyTypeDeviceIdx
+	KeyTypeDevice          = 0 // <folder ID><device ID><file name> => FileInfo
+	KeyTypeGlobal          = 1 // <folder ID><file name> => versionList
+	KeyTypeBlock           = 2 // <folder ID><hash><file name> => block index (uint32)
+	KeyTypeDeviceStatistic = 3
+	KeyTypeFolderStatistic = 4
+	KeyTypeVirtualMtime    = 5 // <folder ID><file name> => {time.Time, time.Time}
+	KeyTypeFolderIdx       = 6 // <folder ID> => folder (string)
+	KeyTypeDeviceIdx       = 7 // <device ID> => device (string)
+	KeyTypeNameIdx         = 8 // [0x00]<name ID> => file name, [0x01]<file name> => name ID (uint64)
 )
 
 type fileVersion struct {
-	version protocol.Vector
-	device  []byte
+	version  protocol.Vector
+	deviceID uint32
 }
 
 type versionList struct {
 	versions []fileVersion
 }
 
+// to deserialize v0.12 database format
+type oldFileVersion struct {
+	version protocol.Vector
+	device  []byte
+}
+
+// to deserialize v0.12 database format
+type oldVersionList struct {
+	versions []oldFileVersion
+}
+
 func (l versionList) String() string {
 	var b bytes.Buffer
-	var id protocol.DeviceID
-	b.WriteString("{")
-	for i, v := range l.versions {
-		if i > 0 {
-			b.WriteString(", ")
-		}
-		copy(id[:], v.device)
-		fmt.Fprintf(&b, "{%d, %v}", v.version, id)
+	b.WriteString("[")
+	for _, v := range l.versions {
+		fmt.Fprintf(&b, "[%d, %d]", v.version, v.deviceID)
 	}
-	b.WriteString("}")
+	b.WriteString("]")
 	return b.String()
 }
 

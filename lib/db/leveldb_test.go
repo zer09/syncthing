@@ -17,10 +17,11 @@ func TestDeviceKey(t *testing.T) {
 	name := []byte("name")
 
 	db := OpenMemory()
-	db.folderIdx.ID(fld)
-	db.deviceIdx.ID(dev)
+	fldID := db.folderIdx.ID(fld)
+	devID := db.deviceIdx.ID(dev)
+	nameID := db.nameIdx.ID(name)
 
-	key := db.deviceKey(fld, dev, name)
+	key := db.deviceKey(fldID, devID, nameID)
 
 	fld2 := db.deviceKeyFolder(key)
 	if bytes.Compare(fld2, fld) != 0 {
@@ -41,9 +42,10 @@ func TestGlobalKey(t *testing.T) {
 	name := []byte("name")
 
 	db := OpenMemory()
-	db.folderIdx.ID(fld)
+	fldID := db.folderIdx.ID(fld)
+	nameID := db.nameIdx.ID(name)
 
-	key := db.globalKey(fld, name)
+	key := db.globalKey(fldID, nameID)
 
 	fld2 := db.globalKeyFolder(key)
 	if bytes.Compare(fld2, fld) != 0 {

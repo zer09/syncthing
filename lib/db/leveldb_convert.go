@@ -36,15 +36,24 @@ func convertKeyFormat(from, to *leveldb.DB) error {
 			blocks++
 
 		case KeyTypeDevice:
-			newKey := dbi.deviceKey(oldDeviceKeyFolder(key), oldDeviceKeyDevice(key), oldDeviceKeyName(key))
+			newKey := dbi.deviceKey(dbi.folderIdx.ID(oldDeviceKeyFolder(key)), dbi.deviceIdx.ID(oldDeviceKeyDevice(key)), dbi.nameIdx.ID(oldDeviceKeyName(key)))
 			if err := to.Put(newKey, i.Value(), nil); err != nil {
 				return err
 			}
 			files++
 
 		case KeyTypeGlobal:
-			newKey := dbi.globalKey(oldGlobalKeyFolder(key), oldGlobalKeyName(key))
-			if err := to.Put(newKey, i.Value(), nil); err != nil {
+			newKey := dbi.globalKey(dbi.folderIdx.ID(oldGlobalKeyFolder(key)), dbi.nameIdx.ID(oldGlobalKeyName(key)))
+			var ovl oldVersionList
+			ovl.UnmarshalXDR(i.Value())
+			var vl versionList
+			vl.versions = make([]fileVersion, len(ovl.versions))
+			for i := range ovl.versions {
+				vl.versions[i].version = ovl.versions[i].version
+				vl.versions[i].deviceID = dbi.deviceIdx.ID(ovl.versions[i].device)
+			}
+			bs := vl.MustMarshalXDR()
+			if err := to.Put(newKey, bs, nil); err != nil {
 				return err
 			}
 			globals++

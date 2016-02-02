@@ -141,11 +141,14 @@ func (s *FileSet) Update(device protocol.DeviceID, fs []protocol.FileInfo) {
 	normalizeFilenames(fs)
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
+	folderID := s.db.folderIdx.ID([]byte(s.folder))
+	deviceID := s.db.deviceIdx.ID(device[:])
 	if device == protocol.LocalDeviceID {
 		discards := make([]protocol.FileInfo, 0, len(fs))
 		updates := make([]protocol.FileInfo, 0, len(fs))
 		for _, newFile := range fs {
-			existingFile, ok := s.db.getFile([]byte(s.folder), device[:], []byte(newFile.Name))
+			nameID := s.db.nameIdx.ID([]byte(newFile.Name))
+			existingFile, ok := s.db.getFile(folderID, deviceID, nameID)
 			if !ok || !existingFile.Version.Equal(newFile.Version) {
 				discards = append(discards, existingFile)
 				updates = append(updates, newFile)
@@ -195,13 +198,18 @@ func (s *FileSet) WithPrefixedGlobalTruncated(prefix string, fn Iterator) {
 }
 
 func (s *FileSet) Get(device protocol.DeviceID, file string) (protocol.FileInfo, bool) {
-	f, ok := s.db.getFile([]byte(s.folder), device[:], []byte(osutil.NormalizedFilename(file)))
+	folderID := s.db.folderIdx.ID([]byte(s.folder))
+	deviceID := s.db.deviceIdx.ID(device[:])
+	nameID := s.db.nameIdx.ID([]byte(osutil.NormalizedFilename(file)))
+	f, ok := s.db.getFile(folderID, deviceID, nameID)
 	f.Name = osutil.NativeFilename(f.Name)
 	return f, ok
 }
 
 func (s *FileSet) GetGlobal(file string) (protocol.FileInfo, bool) {
-	fi, ok := s.db.getGlobal([]byte(s.folder), []byte(osutil.NormalizedFilename(file)), false)
+	folderID := s.db.folderIdx.ID([]byte(s.folder))
+	nameID := s.db.nameIdx.ID([]byte(osutil.NormalizedFilename(file)))
+	fi, ok := s.db.getGlobal(folderID, nameID, false)
 	if !ok {
 		return protocol.FileInfo{}, false
 	}
@@ -211,7 +219,9 @@ func (s *FileSet) GetGlobal(file string) (protocol.FileInfo, bool) {
 }
 
 func (s *FileSet) GetGlobalTruncated(file string) (FileInfoTruncated, bool) {
-	fi, ok := s.db.getGlobal([]byte(s.folder), []byte(osutil.NormalizedFilename(file)), true)
+	folderID := s.db.folderIdx.ID([]byte(s.folder))
+	nameID := s.db.nameIdx.ID([]byte(osutil.NormalizedFilename(file)))
+	fi, ok := s.db.getGlobal(folderID, nameID, true)
 	if !ok {
 		return FileInfoTruncated{}, false
 	}
