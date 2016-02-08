@@ -24,6 +24,7 @@ type FileSet struct {
 	localVersion map[protocol.DeviceID]int64
 	mutex        sync.Mutex
 	folder       string
+	folderID     uint32
 	db           *Instance
 	blockmap     *BlockMap
 	localSize    sizeTracker
@@ -96,6 +97,7 @@ func NewFileSet(folder string, db *Instance) *FileSet {
 	var s = FileSet{
 		localVersion: make(map[protocol.DeviceID]int64),
 		folder:       folder,
+		folderID:     db.folderIdx.ID([]byte(folder)),
 		db:           db,
 		blockmap:     NewBlockMap(db, db.folderIdx.ID([]byte(folder))),
 		mutex:        sync.NewMutex(),
@@ -141,23 +143,18 @@ func (s *FileSet) Update(device protocol.DeviceID, fs []protocol.FileInfo) {
 	normalizeFilenames(fs)
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	folderID := s.db.folderIdx.ID([]byte(s.folder))
-	deviceID := s.db.deviceIdx.ID(device[:])
+
+	var cb callbacks
 	if device == protocol.LocalDeviceID {
-		discards := make([]protocol.FileInfo, 0, len(fs))
-		updates := make([]protocol.FileInfo, 0, len(fs))
-		for _, newFile := range fs {
-			nameID := s.db.nameIdx.ID([]byte(newFile.Name))
-			existingFile, ok := s.db.getFile(folderID, deviceID, nameID)
-			if !ok || !existingFile.Version.Equal(newFile.Version) {
-				discards = append(discards, existingFile)
-				updates = append(updates, newFile)
-			}
+		cb = &blockmapUpdater{
+			db:       s.db,
+			bm:       s.blockmap,
+			deviceID: s.db.deviceIdx.ID(protocol.LocalDeviceID[:]),
+			folderID: s.folderID,
 		}
-		s.blockmap.Discard(discards)
-		s.blockmap.Update(updates)
 	}
-	if lv := s.db.updateFiles([]byte(s.folder), device[:], fs, &s.localSize, &s.globalSize); lv > s.localVersion[device] {
+
+	if lv := s.db.updateFiles([]byte(s.folder), device[:], fs, &s.localSize, &s.globalSize, cb); lv > s.localVersion[device] {
 		s.localVersion[device] = lv
 	}
 }
@@ -198,18 +195,16 @@ func (s *FileSet) WithPrefixedGlobalTruncated(prefix string, fn Iterator) {
 }
 
 func (s *FileSet) Get(device protocol.DeviceID, file string) (protocol.FileInfo, bool) {
-	folderID := s.db.folderIdx.ID([]byte(s.folder))
 	deviceID := s.db.deviceIdx.ID(device[:])
 	nameID := s.db.nameIdx.ID([]byte(osutil.NormalizedFilename(file)))
-	f, ok := s.db.getFile(folderID, deviceID, nameID)
+	f, ok := s.db.getFile(s.folderID, deviceID, nameID)
 	f.Name = osutil.NativeFilename(f.Name)
 	return f, ok
 }
 
 func (s *FileSet) GetGlobal(file string) (protocol.FileInfo, bool) {
-	folderID := s.db.folderIdx.ID([]byte(s.folder))
 	nameID := s.db.nameIdx.ID([]byte(osutil.NormalizedFilename(file)))
-	fi, ok := s.db.getGlobal(folderID, nameID, false)
+	fi, ok := s.db.getGlobal(s.folderID, nameID, false)
 	if !ok {
 		return protocol.FileInfo{}, false
 	}
@@ -219,9 +214,8 @@ func (s *FileSet) GetGlobal(file string) (protocol.FileInfo, bool) {
 }
 
 func (s *FileSet) GetGlobalTruncated(file string) (FileInfoTruncated, bool) {
-	folderID := s.db.folderIdx.ID([]byte(s.folder))
 	nameID := s.db.nameIdx.ID([]byte(osutil.NormalizedFilename(file)))
-	fi, ok := s.db.getGlobal(folderID, nameID, true)
+	fi, ok := s.db.getGlobal(s.folderID, nameID, true)
 	if !ok {
 		return FileInfoTruncated{}, false
 	}
@@ -278,5 +272,32 @@ func nativeFileIterator(fn Iterator) Iterator {
 		default:
 			panic("unknown interface type")
 		}
+	}
+}
+
+type blockmapUpdater struct {
+	folderID uint32
+	deviceID uint32
+	db       *Instance
+	bm       *BlockMap
+}
+
+func (u *blockmapUpdater) adding(nameID uint64, new protocol.FileInfo) {
+	u.bm.Add([]protocol.FileInfo{new})
+}
+
+func (u *blockmapUpdater) replacing(nameID uint64, old FileInfoTruncated, new protocol.FileInfo) {
+	u.bm.Add([]protocol.FileInfo{new})
+
+	ef, ok := u.db.getFile(u.folderID, u.deviceID, nameID)
+	if ok {
+		u.bm.Discard([]protocol.FileInfo{ef})
+	}
+}
+
+func (u *blockmapUpdater) deleting(nameID uint64, old FileInfoTruncated) {
+	ef, ok := u.db.getFile(u.folderID, u.deviceID, nameID)
+	if ok {
+		u.bm.Discard([]protocol.FileInfo{ef})
 	}
 }

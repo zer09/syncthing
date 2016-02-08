@@ -97,6 +97,11 @@ func (db *Instance) Compact() error {
 	return db.CompactRange(util.Range{})
 }
 
+type callbacks interface {
+	adding(nameID uint64, new protocol.FileInfo)
+	replacing(nameID uint64, old FileInfoTruncated, new protocol.FileInfo)
+}
+
 func (db *Instance) replace(folder, device []byte, fs []protocol.FileInfo, localSize, globalSize *sizeTracker) int64 {
 	files := make(map[string]protocol.FileInfo)
 	for _, f := range fs {
@@ -179,7 +184,7 @@ func (db *Instance) replace(folder, device []byte, fs []protocol.FileInfo, local
 	return maxLocalVer
 }
 
-func (db *Instance) updateFiles(folder, device []byte, fs []protocol.FileInfo, localSize, globalSize *sizeTracker) int64 {
+func (db *Instance) updateFiles(folder, device []byte, fs []protocol.FileInfo, localSize, globalSize *sizeTracker, cb callbacks) int64 {
 	t := db.newReadWriteTransaction()
 	defer t.close()
 
@@ -197,6 +202,9 @@ func (db *Instance) updateFiles(folder, device []byte, fs []protocol.FileInfo, l
 		if err == leveldb.ErrNotFound {
 			if isLocalDevice {
 				localSize.addFile(f)
+			}
+			if cb != nil {
+				cb.adding(nameID, f)
 			}
 
 			if lv := t.insertFile(folderID, deviceID, nameID, f); lv > maxLocalVer {
@@ -223,6 +231,9 @@ func (db *Instance) updateFiles(folder, device []byte, fs []protocol.FileInfo, l
 				localSize.addFile(f)
 			}
 
+			if cb != nil {
+				cb.replacing(nameID, ef, f)
+			}
 			if lv := t.insertFile(folderID, deviceID, nameID, f); lv > maxLocalVer {
 				maxLocalVer = lv
 			}
