@@ -1,5 +1,6 @@
 {
 	"phabricator.uri": "https://source.syncthing.net/",
 	"project_id": "syncthing",
-	"project.name": "syncthing"
+	"project.name": "syncthing",
+	"repository.callsign": "ST"
 }
