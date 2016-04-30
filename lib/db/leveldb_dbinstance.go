@@ -557,12 +557,37 @@ func (db *Instance) checkGlobals(folder []byte, globalSize *sizeTracker) {
 			panic(err)
 		}
 
+		name := db.globalKeyName(gk)
+
+		if len(vl.versions) == 0 {
+			// A zero length version list is not OK here. If the file exists
+			// at all it should contain, at the very least, our local
+			// version. If we don't have a local version then the global
+			// entry should be deleted.
+
+			fi, ok := t.getFile(folder, protocol.LocalDeviceID[:], name)
+			if !ok {
+				// No local version of the file. Delete and move on.
+				t.Batch.Delete(dbi.Key())
+				continue
+			}
+
+			// We have a local version. Set the version list to point to it,
+			// write it, and continue.
+			vl.versions = append(vl.versions, fileVersion{
+				fi.Version,
+				protocol.LocalDeviceID[:],
+			})
+			t.Put(dbi.Key(), vl.MustMarshalXDR())
+			t.checkFlush()
+			continue
+		}
+
 		// Check the global version list for consistency. An issue in previous
 		// versions of goleveldb could result in reordered writes so that
 		// there are global entries pointing to no longer existing files. Here
 		// we find those and clear them out.
 
-		name := db.globalKeyName(gk)
 		var newVL versionList
 		for i, version := range vl.versions {
 			fk = db.deviceKeyInto(fk[:cap(fk)], folder, version.device, name)
