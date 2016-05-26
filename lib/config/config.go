@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/syncthing/syncthing/lib/protocol"
+	"github.com/syncthing/syncthing/lib/rand"
 	"github.com/syncthing/syncthing/lib/util"
 )
 
@@ -260,7 +261,7 @@ func (cfg *Configuration) prepare(myID protocol.DeviceID) {
 	}
 
 	if cfg.GUI.APIKey == "" {
-		cfg.GUI.APIKey = util.RandomString(32)
+		cfg.GUI.APIKey = rand.String(32)
 	}
 }
 
