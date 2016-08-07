@@ -8,16 +8,9 @@
 			"branch": "master"
 		},
 		{
-			"importpath": "github.com/AudriusButkevicius/go-stun/stun",
-			"repository": "https://github.com/AudriusButkevicius/go-stun",
-			"revision": "fba821a318badb1ff36997de48aee7ba5bbe26a1",
-			"branch": "master",
-			"path": "/stun"
-		},
-		{
 			"importpath": "github.com/AudriusButkevicius/kcp-go",
 			"repository": "https://github.com/AudriusButkevicius/kcp-go",
-			"revision": "8be2dd6d6d3017bbd43eb1a8938409ed3e70223e",
+			"revision": "53bb118dd42799e943587e0a3191728320f97f57",
 			"branch": "master"
 		},
 		{
@@ -49,6 +42,19 @@
 			"repository": "https://github.com/calmh/xdr",
 			"revision": "f9b9f8f7aa27725f5cabb699bd9099ca7ce09143",
 			"branch": "master"
+		},
+		{
+			"importpath": "github.com/ccding/go-stun",
+			"repository": "https://github.com/ccding/go-stun",
+			"revision": "e2da02df75b2fbb11ccc855da482809859d3baea",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/ccding/go-stun/stun",
+			"repository": "https://github.com/ccding/go-stun",
+			"revision": "c5e4803fd5af56246ece627ec63abe5021fc0f40",
+			"branch": "master",
+			"path": "/stun"
 		},
 		{
 			"importpath": "github.com/cznic/b",

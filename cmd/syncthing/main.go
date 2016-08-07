@@ -46,6 +46,8 @@ import (
 	"github.com/syncthing/syncthing/lib/upgrade"
 
 	"github.com/thejerf/suture"
+
+	_ "net/http/pprof"
 )
 
 var (
