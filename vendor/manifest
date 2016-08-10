@@ -16,7 +16,7 @@
 		{
 			"importpath": "github.com/AudriusButkevicius/pfilter",
 			"repository": "https://github.com/AudriusButkevicius/pfilter",
-			"revision": "22ed401e9d67313c99d187c6aec15a798b480288",
+			"revision": "ad84899cabdc90edb91a9633716d842abc763398",
 			"branch": "master"
 		},
 		{
@@ -140,6 +140,12 @@
 			"importpath": "github.com/golang/snappy",
 			"repository": "https://github.com/golang/snappy",
 			"revision": "5f1c01d9f64b941dd9582c638279d046eda6ca31",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/hashicorp/yamux",
+			"repository": "https://github.com/hashicorp/yamux",
+			"revision": "d1caa6c97c9fc1cc9e83bbe34d0603f9ff0ce8bd",
 			"branch": "master"
 		},
 		{
