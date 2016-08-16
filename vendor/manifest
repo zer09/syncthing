@@ -10,7 +10,7 @@
 		{
 			"importpath": "github.com/AudriusButkevicius/kcp-go",
 			"repository": "https://github.com/AudriusButkevicius/kcp-go",
-			"revision": "53bb118dd42799e943587e0a3191728320f97f57",
+			"revision": "85b1bb4d8fda084d9afee3273bdf10677e12abf1",
 			"branch": "master"
 		},
 		{
