@@ -46,7 +46,7 @@
 		{
 			"importpath": "github.com/ccding/go-stun",
 			"repository": "https://github.com/ccding/go-stun",
-			"revision": "e2da02df75b2fbb11ccc855da482809859d3baea",
+			"revision": "dee5672f0c732344747f49b978921885508fd846",
 			"branch": "master"
 		},
 		{
