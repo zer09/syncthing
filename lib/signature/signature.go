@@ -20,7 +20,7 @@ import (
 	"io"
 	"math/big"
 
-	sha256 "github.com/minio/sha256-simd"
+	sha256 "github.com/calmh/sha256-simd"
 )
 
 // GenerateKeys returns a new key pair, with the private and public key
