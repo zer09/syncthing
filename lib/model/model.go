@@ -2167,7 +2167,7 @@ func (m *Model) checkFolderFreeSpace(folder config.FolderConfiguration) error {
 
 	free, err := osutil.DiskFreePercentage(folder.Path())
 	if err == nil && free < folder.MinDiskFreePct {
-		return errFolderNoSpace
+		return fmt.Errorf("folder has %.02f%% free space, want %0.2f%%", free, folder.MinDiskFreePct)
 	}
 
 	return nil
