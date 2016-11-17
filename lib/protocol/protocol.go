@@ -276,6 +276,11 @@ func (c *rawConnection) ping() bool {
 
 func (c *rawConnection) readerLoop() (err error) {
 	defer func() {
+		if err == nil {
+			// c.close() doesn't expect to get a nil error. If there is no
+			// error, there is no need to close.
+			err = errors.New("unexpected return, probably panic")
+		}
 		c.close(err)
 	}()
 

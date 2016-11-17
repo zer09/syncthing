@@ -762,10 +762,16 @@ func (m *Model) ClusterConfig(deviceID protocol.DeviceID, cm protocol.ClusterCon
 
 	m.pmut.RLock()
 	conn, ok := m.conn[deviceID]
-	m.pmut.RUnlock()
 	if !ok {
-		panic("bug: ClusterConfig called on closed or nonexistent connection")
+		l.Warnln("bug: ClusterConfig called on closed or nonexistent connection")
+		l.Infof("ClusterConfig from %s", deviceID)
+		for dev, conn := range m.conn {
+			l.Infof("Have connection %s to %s", conn.Connection.Name(), dev)
+		}
+		m.pmut.RUnlock()
+		panic("cannot proceed")
 	}
+	m.pmut.RUnlock()
 
 	dbLocation := filepath.Dir(m.db.Location())
 
@@ -1047,9 +1053,12 @@ func (m *Model) Closed(conn protocol.Connection, err error) {
 	device := conn.ID()
 
 	m.pmut.Lock()
+	l.Infof("Connection %s to %s closed: %v", conn.Name(), device, err)
 	conn, ok := m.conn[device]
 	if ok {
 		m.progressEmitter.temporaryIndexUnsubscribe(conn)
+	} else {
+		l.Warnln("Connection to %s didn't exist while closing", device)
 	}
 	delete(m.conn, device)
 	delete(m.helloMessages, device)
@@ -1058,7 +1067,6 @@ func (m *Model) Closed(conn protocol.Connection, err error) {
 	delete(m.closed, device)
 	m.pmut.Unlock()
 
-	l.Infof("Connection to %s closed: %v", device, err)
 	events.Default.Log(events.DeviceDisconnected, map[string]string{
 		"id":    device.String(),
 		"error": err.Error(),
