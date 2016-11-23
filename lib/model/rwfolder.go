@@ -532,6 +532,14 @@ nextFile:
 			}
 		}
 
+		// tmp debug
+		if old, ok := f.model.CurrentFolderFile(f.folderID, fileName); ok {
+			if old.Version.Concurrent(fi.Version) {
+				l.Infoln("Conflict: new:", fi)
+				l.Infoln("Conflict: old:", old)
+			}
+		}
+
 		// Not a rename or a symlink, deal with it.
 		f.handleFile(fi, copyChan, finisherChan)
 	}
