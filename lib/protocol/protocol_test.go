@@ -273,3 +273,36 @@ func TestLZ4Compression(t *testing.T) {
 		t.Logf("OK #%d, %d -> %d -> %d", i, dataLen, len(comp), dataLen)
 	}
 }
+
+func TestCheckFilename(t *testing.T) {
+	cases := []struct {
+		name string
+		ok   bool
+	}{
+		{"foo", true},
+		{"foo/..", false},
+		{"foo/../bar", true}, // gets converted to "bar" which is OK
+		{"../foo/../bar", false},
+		{"", false},
+		{".", false},
+		{"..", false},
+		{"/", false},
+		{"/.", false},
+		{"/..", false},
+		{"/a", true},
+		{`\`, true}, // path separator on the wire is forward slash, so these are valid names
+		{`\.`, true},
+		{`\..`, true},
+		{`/a`, true},
+	}
+
+	for _, tc := range cases {
+		_, err := checkFilename(tc.name)
+		if tc.ok && err != nil {
+			t.Errorf("Unexpected error for checkFilename(%q): %v", tc.name, err)
+		}
+		if !tc.ok && err == nil {
+			t.Errorf("Unexpected pass for checkFilename(%q)", tc.name)
+		}
+	}
+}
