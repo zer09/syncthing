@@ -12,6 +12,8 @@ import (
 	"sync"
 	"time"
 
+	"runtime"
+
 	lz4 "github.com/bkaradzic/go-lz4"
 )
 
@@ -491,6 +493,12 @@ func checkFilename(name string) (string, error) {
 		return "", errInvalidFilename
 	}
 	if strings.HasPrefix(name, "../") {
+		return "", errInvalidFilename
+	}
+	if runtime.GOOS == "windows" && strings.Contains(name, `\`) {
+		// Backslashes are not valid in files on Windows. Perhaps we should
+		// handle this softer, but we need to catch it before the slash
+		// conversion happens and the backslash becomes a path separator.
 		return "", errInvalidFilename
 	}
 	return name, nil
