@@ -45,8 +45,8 @@ func fixupFiles(files []FileInfo) []FileInfo {
 				// we delay the allocation and copy to output slice until we
 				// really need to do it, then copy all the so-far valid
 				// files to it.
-				out = make([]FileInfo, i, len(fs)-1)
-				copy(out, fs)
+				out = make([]FileInfo, i, len(files)-1)
+				copy(out, files)
 			}
 			continue
 		}
@@ -65,5 +65,5 @@ func fixupFiles(files []FileInfo) []FileInfo {
 	}
 
 	// Unchanged
-	return fs
+	return files
 }
