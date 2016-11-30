@@ -12,8 +12,6 @@ import (
 	"sync"
 	"time"
 
-	"runtime"
-
 	lz4 "github.com/bkaradzic/go-lz4"
 )
 
@@ -337,11 +335,9 @@ func (c *rawConnection) readerLoop() (err error) {
 			if state != stateReady {
 				return fmt.Errorf("protocol error: request message in state %d", state)
 			}
-			name, err := checkFilename(msg.Name)
-			if err != nil {
+			if err := checkFilename(msg.Name); err != nil {
 				return err
 			}
-			msg.Name = name
 			// Requests are handled asynchronously
 			go c.handleRequest(*msg)
 
@@ -476,32 +472,31 @@ func (c *rawConnection) handleIndexUpdate(im IndexUpdate) {
 }
 
 func checkFilenames(fs []FileInfo) error {
-	for i := range fs {
-		name, err := checkFilename(fs[i].Name)
-		if err != nil {
+	for _, f := range fs {
+		if err := checkFilename(f.Name); err != nil {
 			return errInvalidFilename
 		}
-		fs[i].Name = name
 	}
 	return nil
 }
 
-func checkFilename(name string) (string, error) {
-	name = path.Clean(name)
+func checkFilename(name string) error {
+	cleanedName := path.Clean(name)
+	if cleanedName != name {
+		return errInvalidFilename
+	}
+
 	switch name {
-	case "", ".", "..", "/":
-		return "", errInvalidFilename
+	case "", ".", "..":
+		return errInvalidFilename
+	}
+	if strings.HasPrefix(name, "/") {
+		return errInvalidFilename
 	}
 	if strings.HasPrefix(name, "../") {
-		return "", errInvalidFilename
+		return errInvalidFilename
 	}
-	if runtime.GOOS == "windows" && strings.Contains(name, `\`) {
-		// Backslashes are not valid in files on Windows. Perhaps we should
-		// handle this softer, but we need to catch it before the slash
-		// conversion happens and the backslash becomes a path separator.
-		return "", errInvalidFilename
-	}
-	return name, nil
+	return nil
 }
 
 func (c *rawConnection) handleRequest(req Request) {

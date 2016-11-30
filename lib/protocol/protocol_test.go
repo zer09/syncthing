@@ -279,9 +279,19 @@ func TestCheckFilename(t *testing.T) {
 		name string
 		ok   bool
 	}{
+		// OK filename
 		{"foo", true},
+		{"foo/bar/baz", true},
+		{"foo/bar:baz", true}, // colon is ok in general, will be filtered on windows
+		{`\`, true},           // path separator on the wire is forward slash, so as above
+		{`\.`, true},
+		{`\..`, true},
+		{".foo", true},
+		{"foo..", true},
+
+		// Invalid filenames
 		{"foo/..", false},
-		{"foo/../bar", true}, // gets converted to "bar" which is OK
+		{"foo/../bar", false},
 		{"../foo/../bar", false},
 		{"", false},
 		{".", false},
@@ -289,20 +299,17 @@ func TestCheckFilename(t *testing.T) {
 		{"/", false},
 		{"/.", false},
 		{"/..", false},
-		{"/a", true},
-		{`\`, true}, // path separator on the wire is forward slash, so these are valid names
-		{`\.`, true},
-		{`\..`, true},
-		{`/a`, true},
+		{"/foo", false},
+		{"./foo", false},
+		{"foo./", false},
+		{"foo/.", false},
+		{"foo/", false},
 	}
 
 	for _, tc := range cases {
-		_, err := checkFilename(tc.name)
-		if tc.ok && err != nil {
-			t.Errorf("Unexpected error for checkFilename(%q): %v", tc.name, err)
-		}
-		if !tc.ok && err == nil {
-			t.Errorf("Unexpected pass for checkFilename(%q)", tc.name)
+		err := checkFilename(tc.name)
+		if (err == nil) != tc.ok {
+			t.Errorf("Unexpected result for checkFilename(%q): %v", tc.name, err)
 		}
 	}
 }
