@@ -602,6 +602,11 @@ func (f *rwFolder) handleDir(file protocol.FileInfo) {
 		l.Debugf("need dir\n\t%v\n\t%v", file, curFile)
 	}
 
+	if !osutil.IsDir(f.dir, filepath.Dir(file.Name)) {
+		f.newError(file.Name, errNotDir)
+		return
+	}
+
 	info, err := f.mtimeFS.Lstat(realName)
 	switch {
 	// There is already something under that name, but it's a file/link.
@@ -690,6 +695,12 @@ func (f *rwFolder) deleteDir(file protocol.FileInfo, matcher *ignore.Matcher) {
 		f.newError(file.Name, err)
 		return
 	}
+
+	if !osutil.IsDir(f.dir, filepath.Dir(file.Name)) {
+		f.newError(file.Name, errNotDir)
+		return
+	}
+
 	// Delete any temporary files lying around in the directory
 	dir, _ := os.Open(realName)
 	if dir != nil {
@@ -741,6 +752,11 @@ func (f *rwFolder) deleteFile(file protocol.FileInfo) {
 	realName, err := rootedJoinedPath(f.dir, file.Name)
 	if err != nil {
 		f.newError(file.Name, err)
+		return
+	}
+
+	if !osutil.IsDir(f.dir, filepath.Dir(file.Name)) {
+		f.newError(file.Name, errNotDir)
 		return
 	}
 
@@ -938,7 +954,8 @@ func (f *rwFolder) handleFile(file protocol.FileInfo, copyChan chan<- copyBlocks
 	}
 
 	// Figure out the absolute filenames we need once and for all
-	tempName, err := rootedJoinedPath(f.dir, defTempNamer.TempName(file.Name))
+	relTempName := defTempNamer.TempName(file.Name)
+	tempName, err := rootedJoinedPath(f.dir, relTempName)
 	if err != nil {
 		f.newError(file.Name, err)
 		return
@@ -1038,7 +1055,9 @@ func (f *rwFolder) handleFile(file protocol.FileInfo, copyChan chan<- copyBlocks
 	s := sharedPullerState{
 		file:             file,
 		folder:           f.folderID,
+		folderPath:       f.dir,
 		tempName:         tempName,
+		relTempName:      relTempName,
 		realName:         realName,
 		copyTotal:        len(blocks),
 		copyNeeded:       len(blocks),

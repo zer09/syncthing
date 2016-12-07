@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/syncthing/syncthing/lib/osutil"
 	"github.com/syncthing/syncthing/lib/protocol"
 	"github.com/syncthing/syncthing/lib/sync"
 )
@@ -22,7 +23,9 @@ type sharedPullerState struct {
 	// Immutable, does not require locking
 	file        protocol.FileInfo // The new file (desired end state)
 	folder      string
+	folderPath  string
 	tempName    string
+	relTempName string
 	realName    string
 	reused      int // Number of blocks reused from temporary file
 	ignorePerms bool
@@ -154,6 +157,14 @@ func (s *sharedPullerState) tempFile() (io.WriterAt, error) {
 			return nil, err
 		}
 	}
+
+	// Verify that the parent dir is in fact a directory and not a symlink or
+	// something else, as best we can given the tools at hand...
+	if !osutil.IsDir(s.folderPath, filepath.Dir(s.relTempName)) {
+		s.failLocked("dst create", errNotDir)
+		return nil, errNotDir
+	}
+
 	fd, err := os.OpenFile(s.tempName, flags, mode)
 	if err != nil {
 		s.failLocked("dst create", err)

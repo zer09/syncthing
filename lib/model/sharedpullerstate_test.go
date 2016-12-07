@@ -73,8 +73,10 @@ func TestReadOnlyDir(t *testing.T) {
 	}()
 
 	s := sharedPullerState{
-		tempName: "testdata/read_only_dir/.temp_name",
-		mut:      sync.NewRWMutex(),
+		folderPath:  "testdata",
+		tempName:    "testdata/read_only_dir/.temp_name",
+		relTempName: "read_only_dir/.temp_name",
+		mut:         sync.NewRWMutex(),
 	}
 
 	fd, err := s.tempFile()
