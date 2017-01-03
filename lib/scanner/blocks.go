@@ -13,7 +13,6 @@ import (
 
 	"github.com/syncthing/syncthing/lib/protocol"
 	"github.com/syncthing/syncthing/lib/sha256"
-	"github.com/syncthing/syncthing/lib/weakhash"
 )
 
 var SHA256OfNothing = []uint8{0xe3, 0xb0, 0xc4, 0x42, 0x98, 0xfc, 0x1c, 0x14, 0x9a, 0xfb, 0xf4, 0xc8, 0x99, 0x6f, 0xb9, 0x24, 0x27, 0xae, 0x41, 0xe4, 0x64, 0x9b, 0x93, 0x4c, 0xa4, 0x95, 0x99, 0x1b, 0x78, 0x52, 0xb8, 0x55}
@@ -26,7 +25,7 @@ type Counter interface {
 func Blocks(r io.Reader, blocksize int, sizehint int64, counter Counter) ([]protocol.BlockInfo, error) {
 	hf := sha256.New()
 	hashLength := hf.Size()
-	whf := weakhash.NewHash(blocksize)
+	//whf := weakhash.NewHash(blocksize)
 
 	var blocks []protocol.BlockInfo
 	var hashes, thisHash []byte
@@ -46,7 +45,8 @@ func Blocks(r io.Reader, blocksize int, sizehint int64, counter Counter) ([]prot
 	var offset int64
 	for {
 		lr := io.LimitReader(r, int64(blocksize))
-		n, err := io.CopyBuffer(hf, io.TeeReader(lr, whf), buf)
+		//thf := io.MultiWriter(hf, whf)
+		n, err := io.CopyBuffer(hf, lr, buf)
 		if err != nil {
 			return nil, err
 		}
@@ -65,17 +65,17 @@ func Blocks(r io.Reader, blocksize int, sizehint int64, counter Counter) ([]prot
 		thisHash, hashes = hashes[:hashLength], hashes[hashLength:]
 
 		b := protocol.BlockInfo{
-			Size:     int32(n),
-			Offset:   offset,
-			Hash:     thisHash,
-			WeakHash: whf.Sum32(),
+			Size:   int32(n),
+			Offset: offset,
+			Hash:   thisHash,
+			//WeakHash: whf.Sum32(),
 		}
 
 		blocks = append(blocks, b)
 		offset += n
 
 		hf.Reset()
-		whf.Reset()
+		//whf.Reset()
 	}
 
 	if len(blocks) == 0 {

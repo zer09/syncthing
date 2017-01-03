@@ -83,18 +83,16 @@ type digest struct {
 }
 
 func (d *digest) Write(data []byte) (int, error) {
+	a, b, j, buf, size := d.a, d.b, d.j, d.buf, d.size
+	s16 := uint16(size)
 	for _, c := range data {
-		// TODO: Use this in Go 1.6
-		// d.a = d.a - uint16(d.buf[d.j]) + uint16(c)
-		// d.b = d.b - uint16(d.size)*uint16(d.buf[d.j]) + d.a
-		d.a -= uint16(d.buf[d.j])
-		d.a += uint16(c)
-		d.b -= uint16(d.size) * uint16(d.buf[d.j])
-		d.b += d.a
-
-		d.buf[d.j] = c
-		d.j = (d.j + 1) % d.size
+		v := uint16(buf[j])
+		a = a - v + uint16(c)
+		b = b - s16*v + a
+		buf[j] = c
+		j = (j + 1) % d.size
 	}
+	d.a, d.b, d.j = a, b, j
 	return len(data), nil
 }
 

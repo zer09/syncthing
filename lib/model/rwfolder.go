@@ -28,7 +28,6 @@ import (
 	"github.com/syncthing/syncthing/lib/symlinks"
 	"github.com/syncthing/syncthing/lib/sync"
 	"github.com/syncthing/syncthing/lib/versioner"
-	"github.com/syncthing/syncthing/lib/weakhash"
 )
 
 func init() {
@@ -1215,7 +1214,7 @@ func (f *sendReceiveFolder) copierRoutine(in <-chan copyBlocksState, pullChan ch
 		}
 		f.model.fmut.RUnlock()
 
-		var weakHashFinder *weakhash.Finder
+		/*var weakHashFinder *weakhash.Finder
 		if !f.DisableWeakHash {
 			hashesToFind := make([]uint32, 0, len(state.blocks))
 			for _, block := range state.blocks {
@@ -1228,7 +1227,7 @@ func (f *sendReceiveFolder) copierRoutine(in <-chan copyBlocksState, pullChan ch
 			if err != nil {
 				l.Debugln("weak hasher", err)
 			}
-		}
+		}*/
 
 		for _, block := range state.blocks {
 			if !f.DisableSparseFiles && state.reused == 0 && block.IsEmpty() {
@@ -1245,69 +1244,69 @@ func (f *sendReceiveFolder) copierRoutine(in <-chan copyBlocksState, pullChan ch
 
 			buf = buf[:int(block.Size)]
 
-			found, err := weakHashFinder.Iterate(block.WeakHash, buf, func(offset int64) bool {
-				if _, err := scanner.VerifyBuffer(buf, block); err != nil {
-					return true
-				}
-
-				_, err = dstFd.WriteAt(buf, block.Offset)
-				if err != nil {
-					state.fail("dst write", err)
-
-				}
-				if offset == block.Offset {
-					state.copiedFromOrigin()
-				} else {
-					state.copiedFromOriginShifted()
-				}
-
-				return false
-			})
-			if err != nil {
-				l.Debugln("weak hasher iter", err)
-			}
-
-			if !found {
-				found = f.model.finder.Iterate(folders, block.Hash, func(folder, file string, index int32) bool {
-					inFile, err := rootedJoinedPath(folderRoots[folder], file)
-					if err != nil {
-						return false
-					}
-					fd, err := os.Open(inFile)
-					if err != nil {
-						return false
-					}
-
-					_, err = fd.ReadAt(buf, protocol.BlockSize*int64(index))
-					fd.Close()
-					if err != nil {
-						return false
-					}
-
-					hash, err := scanner.VerifyBuffer(buf, block)
-					if err != nil {
-						if hash != nil {
-							l.Debugf("Finder block mismatch in %s:%s:%d expected %q got %q", folder, file, index, block.Hash, hash)
-							err = f.model.finder.Fix(folder, file, index, block.Hash, hash)
-							if err != nil {
-								l.Warnln("finder fix:", err)
-							}
-						} else {
-							l.Debugln("Finder failed to verify buffer", err)
-						}
-						return false
+			/*
+				found, err := weakHashFinder.Iterate(block.WeakHash, buf, func(offset int64) bool {
+					if _, err := scanner.VerifyBuffer(buf, block); err != nil {
+						return true
 					}
 
 					_, err = dstFd.WriteAt(buf, block.Offset)
 					if err != nil {
 						state.fail("dst write", err)
+
 					}
-					if file == state.file.Name {
+					if offset == block.Offset {
 						state.copiedFromOrigin()
+					} else {
+						state.copiedFromOriginShifted()
 					}
-					return true
+
+					return false
 				})
-			}
+				if err != nil {
+					l.Debugln("weak hasher iter", err)
+				}
+			*/
+
+			found := f.model.finder.Iterate(folders, block.Hash, func(folder, file string, index int32) bool {
+				inFile, err := rootedJoinedPath(folderRoots[folder], file)
+				if err != nil {
+					return false
+				}
+				fd, err := os.Open(inFile)
+				if err != nil {
+					return false
+				}
+
+				_, err = fd.ReadAt(buf, protocol.BlockSize*int64(index))
+				fd.Close()
+				if err != nil {
+					return false
+				}
+
+				hash, err := scanner.VerifyBuffer(buf, block)
+				if err != nil {
+					if hash != nil {
+						l.Debugf("Finder block mismatch in %s:%s:%d expected %q got %q", folder, file, index, block.Hash, hash)
+						err = f.model.finder.Fix(folder, file, index, block.Hash, hash)
+						if err != nil {
+							l.Warnln("finder fix:", err)
+						}
+					} else {
+						l.Debugln("Finder failed to verify buffer", err)
+					}
+					return false
+				}
+
+				_, err = dstFd.WriteAt(buf, block.Offset)
+				if err != nil {
+					state.fail("dst write", err)
+				}
+				if file == state.file.Name {
+					state.copiedFromOrigin()
+				}
+				return true
+			})
 
 			if state.failed() != nil {
 				break
@@ -1324,7 +1323,7 @@ func (f *sendReceiveFolder) copierRoutine(in <-chan copyBlocksState, pullChan ch
 				state.copyDone(block)
 			}
 		}
-		weakHashFinder.Close()
+		//weakHashFinder.Close()
 		out <- state.sharedPullerState
 	}
 }

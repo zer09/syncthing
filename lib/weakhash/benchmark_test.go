@@ -9,9 +9,24 @@ package weakhash
 import (
 	"os"
 	"testing"
+
+	"github.com/syncthing/syncthing/lib/protocol"
 )
 
 const testFile = "../model/testdata/~syncthing~file.tmp"
+
+func BenchmarkWeakHash(b *testing.B) {
+	const size = 16384
+	data := make([]byte, size)
+	hf := NewHash(protocol.BlockSize)
+
+	for i := 0; i < b.N; i++ {
+		hf.Write(data)
+	}
+
+	_ = hf.Sum32()
+	b.SetBytes(size)
+}
 
 func BenchmarkFind1MFile(b *testing.B) {
 	b.ReportAllocs()
