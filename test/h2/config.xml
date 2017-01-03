@@ -1,8 +1,8 @@
-<configuration version="16">
-    <folder id="default" label="" path="s2" type="readwrite" rescanIntervalS="15" ignorePerms="false" autoNormalize="true">
-        <device id="I6KAH76-66SLLLB-5PFXSOA-UFJCDZC-YAOMLEK-CP2GB32-BV5RQST-3PSROAU"></device>
-        <device id="MRIW7OK-NETT3M4-N6SBWME-N25O76W-YJKVXPH-FUMQJ3S-P57B74J-GBITBAC"></device>
-        <device id="373HSRP-QLPNLIE-JYKZVQF-P4PKZ63-R2ZE6K3-YD442U2-JHBGBQG-WWXAHAU"></device>
+<configuration version="17">
+    <folder id="default" label="" path="s2/" type="readwrite" rescanIntervalS="15" ignorePerms="false" autoNormalize="true">
+        <device id="I6KAH76-66SLLLB-5PFXSOA-UFJCDZC-YAOMLEK-CP2GB32-BV5RQST-3PSROAU" introducedBy=""></device>
+        <device id="MRIW7OK-NETT3M4-N6SBWME-N25O76W-YJKVXPH-FUMQJ3S-P57B74J-GBITBAC" introducedBy=""></device>
+        <device id="373HSRP-QLPNLIE-JYKZVQF-P4PKZ63-R2ZE6K3-YD442U2-JHBGBQG-WWXAHAU" introducedBy=""></device>
         <minDiskFreePct>1</minDiskFreePct>
         <versioning></versioning>
         <copiers>1</copiers>
@@ -16,11 +16,13 @@
         <maxConflicts>-1</maxConflicts>
         <disableSparseFiles>false</disableSparseFiles>
         <disableTempIndexes>false</disableTempIndexes>
+        <fsync>true</fsync>
         <disableWeakHash>false</disableWeakHash>
+        <paused>false</paused>
     </folder>
-    <folder id="¯\_(ツ)_/¯ Räksmörgås 动作 Адрес" label="" path="s12-2" type="readwrite" rescanIntervalS="15" ignorePerms="false" autoNormalize="true">
-        <device id="I6KAH76-66SLLLB-5PFXSOA-UFJCDZC-YAOMLEK-CP2GB32-BV5RQST-3PSROAU"></device>
-        <device id="MRIW7OK-NETT3M4-N6SBWME-N25O76W-YJKVXPH-FUMQJ3S-P57B74J-GBITBAC"></device>
+    <folder id="¯\_(ツ)_/¯ Räksmörgås 动作 Адрес" label="" path="s12-2/" type="readwrite" rescanIntervalS="15" ignorePerms="false" autoNormalize="true">
+        <device id="I6KAH76-66SLLLB-5PFXSOA-UFJCDZC-YAOMLEK-CP2GB32-BV5RQST-3PSROAU" introducedBy=""></device>
+        <device id="MRIW7OK-NETT3M4-N6SBWME-N25O76W-YJKVXPH-FUMQJ3S-P57B74J-GBITBAC" introducedBy=""></device>
         <minDiskFreePct>1</minDiskFreePct>
         <versioning></versioning>
         <copiers>1</copiers>
@@ -34,11 +36,13 @@
         <maxConflicts>-1</maxConflicts>
         <disableSparseFiles>false</disableSparseFiles>
         <disableTempIndexes>false</disableTempIndexes>
+        <fsync>true</fsync>
         <disableWeakHash>false</disableWeakHash>
+        <paused>false</paused>
     </folder>
-    <folder id="s23" label="" path="s23-2" type="readwrite" rescanIntervalS="15" ignorePerms="false" autoNormalize="true">
-        <device id="MRIW7OK-NETT3M4-N6SBWME-N25O76W-YJKVXPH-FUMQJ3S-P57B74J-GBITBAC"></device>
-        <device id="373HSRP-QLPNLIE-JYKZVQF-P4PKZ63-R2ZE6K3-YD442U2-JHBGBQG-WWXAHAU"></device>
+    <folder id="s23" label="" path="s23-2/" type="readwrite" rescanIntervalS="15" ignorePerms="false" autoNormalize="true">
+        <device id="MRIW7OK-NETT3M4-N6SBWME-N25O76W-YJKVXPH-FUMQJ3S-P57B74J-GBITBAC" introducedBy=""></device>
+        <device id="373HSRP-QLPNLIE-JYKZVQF-P4PKZ63-R2ZE6K3-YD442U2-JHBGBQG-WWXAHAU" introducedBy=""></device>
         <minDiskFreePct>1</minDiskFreePct>
         <versioning></versioning>
         <copiers>1</copiers>
@@ -52,16 +56,21 @@
         <maxConflicts>-1</maxConflicts>
         <disableSparseFiles>false</disableSparseFiles>
         <disableTempIndexes>false</disableTempIndexes>
+        <fsync>true</fsync>
         <disableWeakHash>false</disableWeakHash>
+        <paused>false</paused>
     </folder>
-    <device id="I6KAH76-66SLLLB-5PFXSOA-UFJCDZC-YAOMLEK-CP2GB32-BV5RQST-3PSROAU" name="s1" compression="metadata" introducer="false">
+    <device id="I6KAH76-66SLLLB-5PFXSOA-UFJCDZC-YAOMLEK-CP2GB32-BV5RQST-3PSROAU" name="s1" compression="metadata" introducer="false" skipIntroductionRemovals="false" introducedBy="">
         <address>tcp://127.0.0.1:22001</address>
+        <paused>false</paused>
     </device>
-    <device id="MRIW7OK-NETT3M4-N6SBWME-N25O76W-YJKVXPH-FUMQJ3S-P57B74J-GBITBAC" name="s2" compression="metadata" introducer="false">
+    <device id="MRIW7OK-NETT3M4-N6SBWME-N25O76W-YJKVXPH-FUMQJ3S-P57B74J-GBITBAC" name="s2" compression="metadata" introducer="false" skipIntroductionRemovals="false" introducedBy="">
         <address>tcp://127.0.0.1:22002</address>
+        <paused>false</paused>
     </device>
-    <device id="373HSRP-QLPNLIE-JYKZVQF-P4PKZ63-R2ZE6K3-YD442U2-JHBGBQG-WWXAHAU" name="s3" compression="metadata" introducer="false">
+    <device id="373HSRP-QLPNLIE-JYKZVQF-P4PKZ63-R2ZE6K3-YD442U2-JHBGBQG-WWXAHAU" name="s3" compression="metadata" introducer="false" skipIntroductionRemovals="false" introducedBy="">
         <address>tcp://127.0.0.1:22003</address>
+        <paused>false</paused>
     </device>
     <gui enabled="true" tls="false" debugging="true">
         <address>127.0.0.1:8082</address>
@@ -102,5 +111,6 @@
         <releasesURL>https://upgrades.syncthing.net/meta.json</releasesURL>
         <overwriteRemoteDeviceNamesOnConnect>false</overwriteRemoteDeviceNamesOnConnect>
         <tempIndexMinBlocks>10</tempIndexMinBlocks>
+        <trafficClass>0</trafficClass>
     </options>
 </configuration>

@@ -246,6 +246,8 @@ func TestCopierFinder(t *testing.T) {
 }
 
 func TestWeakHash(t *testing.T) {
+	t.Skip("disabled")
+
 	tempFile := filepath.Join("testdata", defTempNamer.TempName("weakhash"))
 	var shift int64 = 10
 	var size int64 = 1 << 20
